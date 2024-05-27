@@ -22,56 +22,51 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  loader.classList.remove('hidden');
-  loadMoreBtn.classList.add('hidden');
   clearGallery();
   currentPage = 1;
+  loadMoreBtn.classList.add('hidden'); // Hide Load more button on new search
+  fetchAndRenderImages();
+});
+
+loadMoreBtn.addEventListener('click', () => {
+  currentPage += 1;
+  fetchAndRenderImages();
+});
+
+const fetchAndRenderImages = async () => {
+  loader.classList.remove('hidden');
 
   try {
     const data = await fetchImages(currentQuery, currentPage);
-    if (data.hits.length === 0) {
+    if (data.hits.length === 0 && currentPage === 1) {
       iziToast.warning({ title: 'No Results', message: 'Sorry, there are no images matching your search query. Please try again!' });
     } else {
       renderImages(data.hits);
-      loadMoreBtn.classList.remove('hidden');
+      if (currentPage * 15 >= data.totalHits) {
+        loadMoreBtn.classList.add('hidden');
+        iziToast.info({ title: 'End of Results', message: "We're sorry, but you've reached the end of search results." });
+      } else {
+        loadMoreBtn.classList.remove('hidden'); // Show Load more button only if there are more results
+      }
       lightbox.refresh();
+      smoothScroll();
     }
   } catch (error) {
     iziToast.error({ title: 'Error', message: error.message });
   } finally {
     loader.classList.add('hidden');
   }
-});
+};
 
-loadMoreBtn.addEventListener('click', async () => {
-  currentPage += 1;
-  loader.classList.remove('hidden');
-  loadMoreBtn.classList.add('hidden');
+const smoothScroll = () => {
+  const { height: cardHeight } = document.querySelector('.gallery').firstElementChild.getBoundingClientRect();
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+};
 
-  try {
-    const data = await fetchImages(currentQuery, currentPage);
-    renderImages(data.hits);
 
-    if (currentPage * 15 >= data.totalHits) {
-      loadMoreBtn.classList.add('hidden');
-      iziToast.info({ title: 'End of Results', message: "We're sorry, but you've reached the end of search results." });
-    } else {
-      loadMoreBtn.classList.remove('hidden');
-    }
-
-    const { height: cardHeight } = document.querySelector('.gallery').firstElementChild.getBoundingClientRect();
-    window.scrollBy({
-      top: cardHeight * 2,
-      behavior: 'smooth',
-    });
-
-    lightbox.refresh();
-  } catch (error) {
-    iziToast.error({ title: 'Error', message: error.message });
-  } finally {
-    loader.classList.add('hidden');
-  }
-});
 
 
 
